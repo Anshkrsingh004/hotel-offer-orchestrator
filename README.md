@@ -162,6 +162,22 @@ The collection uses a `baseUrl` variable defaulting to `http://localhost:3000`.
 
 ---
 
+## Unit tests
+
+The core de-dupe / cheapest-selection rule is a pure function
+(`src/domain/dedupe.ts`) covered by unit tests using Node's built-in test
+runner (no extra test framework):
+
+```bash
+npm test
+```
+
+Cases covered: cheaper-of-two wins, single-supplier hotel kept, the assessment's
+delhi sample, case-insensitive names, exact-price tie-break (Supplier A wins),
+empty input, and ascending-price ordering.
+
+---
+
 ## Project layout
 
 ```
@@ -176,6 +192,9 @@ src/
     worker.ts              Worker entrypoint
     workflows.ts           hotelComparisonWorkflow (dedupe + cheapest)
     activities.ts          fetch suppliers, save to Redis, filter in Redis
+  domain/
+    dedupe.ts              Pure de-dupe + cheapest-selection rule
+    dedupe.test.ts         Unit tests (node:test)
   redis/client.ts          ioredis connection + key helpers
   data/mockHotels.ts       Static supplier catalogues (overlapping names)
   config.ts                Env-driven configuration

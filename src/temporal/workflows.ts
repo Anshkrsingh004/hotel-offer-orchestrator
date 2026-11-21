@@ -1,6 +1,7 @@
 import { proxyActivities, ApplicationFailure, log } from '@temporalio/workflow';
 import type * as activities from './activities';
 import type { HotelOffer } from '../types';
+import { dedupeCheapest } from '../domain/dedupe';
 
 /**
  * Activity stubs. Each supplier call is retried up to 3 times; a persistently
@@ -60,18 +61,11 @@ export async function hotelComparisonWorkflow(input: HotelSearchInput): Promise<
     );
   }
 
+  // Supplier A is listed first so it wins on exact price ties.
   const allOffers: HotelOffer[] = [...(aOffers ?? []), ...(bOffers ?? [])];
 
   // 2. De-duplicate by name, keeping the cheapest offer.
-  const cheapestByName = new Map<string, HotelOffer>();
-  for (const offer of allOffers) {
-    const key = offer.name.toLowerCase();
-    const existing = cheapestByName.get(key);
-    if (!existing || offer.price < existing.price) {
-      cheapestByName.set(key, offer);
-    }
-  }
-  const deduped = [...cheapestByName.values()].sort((a, b) => a.price - b.price);
+  const deduped = dedupeCheapest(allOffers);
 
   // 3. Persist to Redis (sorted set scored by price).
   await saveDedupedListToRedis(city, deduped);
