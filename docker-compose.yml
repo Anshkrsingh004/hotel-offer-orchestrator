@@ -58,6 +58,8 @@ services:
 
   api:
     build: .
+    # Build this image once; the worker reuses the same tag below.
+    image: hotel-offer-orchestrator:latest
     command: node dist/api/server.js
     depends_on:
       redis:
@@ -77,7 +79,8 @@ services:
       - "3000:3000"
 
   worker:
-    build: .
+    # Reuses the image built by the api service — no second build.
+    image: hotel-offer-orchestrator:latest
     command: node dist/temporal/worker.js
     depends_on:
       redis:
