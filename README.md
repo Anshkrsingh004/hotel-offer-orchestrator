@@ -253,6 +253,13 @@ tests (assertions) for:
 
 The collection uses a `baseUrl` variable defaulting to `http://localhost:3000`.
 
+> **Note on the "supplier down" request:** `?down=A` deliberately exercises the
+> retry path, so the workflow retries the downed supplier (500ms → 1s backoff)
+> before giving up and returning the other supplier's results. That request
+> takes **~2–2.5 seconds** to come back (vs ~100ms normally) — it isn't hung,
+> it's retrying. The healthy supplier is fetched in parallel, so nothing else is
+> blocked.
+
 ### Unit tests
 
 The core de-dupe / cheapest-selection rule is a pure function
@@ -349,6 +356,10 @@ postman/                   Postman collection (.json)
   tolerated as long as the other responds; both down → `502`.
 - **One image, two processes.** `api` and `worker` share a single Docker image
   built once, differing only by start command — less to build and keep in sync.
+- **Health-gated startup order.** Compose healthchecks make the ordering
+  self-documenting: `temporal` is probed with `temporal operator cluster health`,
+  `api` with its own `/health` endpoint, and dependants wait on
+  `condition: service_healthy` rather than relying solely on app-level retries.
 
 ---
 
